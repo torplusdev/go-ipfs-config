@@ -31,6 +31,8 @@ type Config struct {
 	Reprovider   Reprovider
 	Experimental Experiments
 	Plugins      Plugins
+
+	Stellar		Stellar
 }
 
 const (
