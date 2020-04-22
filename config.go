@@ -32,7 +32,7 @@ type Config struct {
 	Experimental Experiments
 	Plugins      Plugins
 
-	Stellar		Stellar
+	PPChannel 	PPChannel // PiedPiper side channel settings
 }
 
 const (
