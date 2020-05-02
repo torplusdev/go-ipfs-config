@@ -33,6 +33,7 @@ type Config struct {
 	Plugins      Plugins
 
 	PPChannel 	PPChannel // PiedPiper side channel settings
+	TorPath		string
 }
 
 const (

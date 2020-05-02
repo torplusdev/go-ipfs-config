@@ -81,6 +81,7 @@ func Init(out io.Writer, nBitsForKeypair int) (*Config, error) {
 				Type:        "basic",
 			},
 		},
+		TorPath: "tor.exe",
 	}
 
 	return conf, nil
