@@ -1,23 +1,30 @@
 package config
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/ipfs/interface-go-ipfs-core/options"
 	ci "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
 func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
-	identity, err := identityConfig(out, nBitsForKeypair)
+	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
+	return InitWithIdentity(identity,bootStrapAddresses,announceAddresses)
+}
+
+func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
+
 	var bootstrapPeers []peer.AddrInfo
+	var err error
 
 	if bootStrapAddresses == nil {
 		bootstrapPeers, err = DefaultBootstrapPeers()
@@ -31,6 +38,7 @@ func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, annou
 		}
 	}
 
+
 	datastore := DefaultDatastoreConfig()
 
 	addressesConfig := addressesConfig()
@@ -38,6 +46,7 @@ func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, annou
 	if announceAddresses != nil {
 		addressesConfig.Announce = announceAddresses
 	}
+
 
 	conf := &Config{
 		API: API{
@@ -96,7 +105,6 @@ func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, annou
 				Type:        "basic",
 			},
 		},
-		TorPath: "tor.exe",
 	}
 
 	return conf, nil
@@ -118,8 +126,9 @@ func addressesConfig() Addresses {
 	return Addresses{
 		Swarm: []string{
 			"/ip4/0.0.0.0/tcp/4001",
-			// "/ip4/0.0.0.0/udp/4002/utp", // disabled for now.
 			"/ip6/::/tcp/4001",
+			"/ip4/0.0.0.0/udp/4001/quic",
+			"/ip6/::/udp/4001/quic",
 		},
 		Announce:   []string{},
 		NoAnnounce: []string{},
@@ -135,47 +144,94 @@ func DefaultDatastoreConfig() Datastore {
 		StorageGCWatermark: 90, // 90%
 		GCPeriod:           "1h",
 		BloomFilterSize:    0,
-		Spec: map[string]interface{}{
-			"type": "mount",
-			"mounts": []interface{}{
-				map[string]interface{}{
-					"mountpoint": "/blocks",
-					"type":       "measure",
-					"prefix":     "flatfs.datastore",
-					"child": map[string]interface{}{
-						"type":      "flatfs",
-						"path":      "blocks",
-						"sync":      true,
-						"shardFunc": "/repo/flatfs/shard/v1/next-to-last/2",
-					},
+		Spec:               flatfsSpec(),
+	}
+}
+
+func badgerSpec() map[string]interface{} {
+	return map[string]interface{}{
+		"type":   "measure",
+		"prefix": "badger.datastore",
+		"child": map[string]interface{}{
+			"type":       "badgerds",
+			"path":       "badgerds",
+			"syncWrites": false,
+			"truncate":   true,
+		},
+	}
+}
+
+func flatfsSpec() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "mount",
+		"mounts": []interface{}{
+			map[string]interface{}{
+				"mountpoint": "/blocks",
+				"type":       "measure",
+				"prefix":     "flatfs.datastore",
+				"child": map[string]interface{}{
+					"type":      "flatfs",
+					"path":      "blocks",
+					"sync":      true,
+					"shardFunc": "/repo/flatfs/shard/v1/next-to-last/2",
 				},
-				map[string]interface{}{
-					"mountpoint": "/",
-					"type":       "measure",
-					"prefix":     "leveldb.datastore",
-					"child": map[string]interface{}{
-						"type":        "levelds",
-						"path":        "datastore",
-						"compression": "none",
-					},
+			},
+			map[string]interface{}{
+				"mountpoint": "/",
+				"type":       "measure",
+				"prefix":     "leveldb.datastore",
+				"child": map[string]interface{}{
+					"type":        "levelds",
+					"path":        "datastore",
+					"compression": "none",
 				},
 			},
 		},
 	}
 }
 
-// identityConfig initializes a new identity.
-func identityConfig(out io.Writer, nbits int) (Identity, error) {
+// CreateIdentity initializes a new identity.
+func CreateIdentity(out io.Writer, opts []options.KeyGenerateOption) (Identity, error) {
 	// TODO guard higher up
 	ident := Identity{}
-	if nbits < 2048 {
-		return ident, errors.New("bitsize less than 2048 is considered unsafe")
-	}
 
-	fmt.Fprintf(out, "generating %v-bit RSA keypair...", nbits)
-	sk, pk, err := ci.GenerateKeyPair(ci.RSA, nbits)
+	settings, err := options.KeyGenerateOptions(opts...)
 	if err != nil {
 		return ident, err
+	}
+
+	var sk ci.PrivKey
+	var pk ci.PubKey
+
+	switch settings.Algorithm {
+	case "rsa":
+		if settings.Size == -1 {
+			settings.Size = options.DefaultRSALen
+		}
+
+		fmt.Fprintf(out, "generating %d-bit RSA keypair...", settings.Size)
+
+		priv, pub, err := ci.GenerateKeyPair(ci.RSA, settings.Size)
+		if err != nil {
+			return ident, err
+		}
+
+		sk = priv
+		pk = pub
+	case "ed25519":
+		if settings.Size != -1 {
+			return ident, fmt.Errorf("number of key bits does not apply when using ed25519 keys")
+		}
+		fmt.Fprintf(out, "generating ED25519 keypair...")
+		priv, pub, err := ci.GenerateEd25519Key(rand.Reader)
+		if err != nil {
+			return ident, err
+		}
+
+		sk = priv
+		pk = pub
+	default:
+		return ident, fmt.Errorf("unrecognized key type: %s", settings.Algorithm)
 	}
 	fmt.Fprintf(out, "done\n")
 
