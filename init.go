@@ -12,21 +12,21 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
+func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int) (*Config, error) {
 	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
-	return InitWithIdentity(identity,bootStrapAddresses,announceAddresses)
+	return InitWithIdentity(identity,bootStrapAddresses,announceAddresses,ppChannelUrl,commandPort)
 }
 
-func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
+func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
 	var err error
 
-	if bootStrapAddresses == nil {
+	if bootStrapAddresses == nil || len(bootStrapAddresses) == 0 {
 		bootstrapPeers, err = DefaultBootstrapPeers()
 		if err != nil {
 			return nil, err
@@ -38,15 +38,13 @@ func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAd
 		}
 	}
 
-
-	datastore := DefaultDatastoreConfig()
+	dataStore := DefaultDatastoreConfig()
 
 	addressesConfig := addressesConfig()
 
-	if announceAddresses != nil {
+	if announceAddresses != nil || len(announceAddresses) == 0 {
 		addressesConfig.Announce = announceAddresses
 	}
-
 
 	conf := &Config{
 		API: API{
@@ -57,7 +55,7 @@ func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAd
 		// NOTE: two swarm listen addrs, one tcp, one utp.
 		Addresses: addressesConfig,
 
-		Datastore: datastore,
+		Datastore: dataStore,
 		Bootstrap: BootstrapPeerStrings(bootstrapPeers),
 		Identity:  identity,
 		Discovery: Discovery{
@@ -104,6 +102,10 @@ func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAd
 				GracePeriod: DefaultConnMgrGracePeriod.String(),
 				Type:        "basic",
 			},
+		},
+		PPChannel: PPChannel{
+			CommandListenPort: commandPort,
+			ChannelUrl:        ppChannelUrl,
 		},
 	}
 
