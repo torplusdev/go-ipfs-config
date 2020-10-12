@@ -12,16 +12,16 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int) (*Config, error) {
+func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
 	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
-	return InitWithIdentity(identity, bootStrapAddresses, announceAddresses, ppChannelUrl, commandPort)
+	return InitWithIdentity(identity, bootStrapAddresses, announceAddresses, ppChannelUrl, commandPort, torPath, torConfigPath)
 }
 
-func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int) (*Config, error) {
+func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
 	var err error
@@ -110,6 +110,8 @@ func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAd
 			CommandListenPort: commandPort,
 			ChannelUrl:        ppChannelUrl,
 		},
+		TorPath:       torPath,
+		TorConfigPath: torConfigPath,
 	}
 
 	return conf, nil
