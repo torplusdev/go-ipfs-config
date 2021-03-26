@@ -12,22 +12,41 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func Init(out io.Writer, nBitsForKeypair int) (*Config, error) {
+func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
 	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
-	return InitWithIdentity(identity)
+	return InitWithIdentity(identity,bootStrapAddresses,announceAddresses)
 }
 
-func InitWithIdentity(identity Identity) (*Config, error) {
-	bootstrapPeers, err := DefaultBootstrapPeers()
-	if err != nil {
-		return nil, err
+func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string) (*Config, error) {
+
+	var bootstrapPeers []peer.AddrInfo
+	var err error
+
+	if bootStrapAddresses == nil {
+		bootstrapPeers, err = DefaultBootstrapPeers()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		bootstrapPeers, err = ParseBootstrapPeers(bootStrapAddresses)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+
 	datastore := DefaultDatastoreConfig()
+
+	addressesConfig := addressesConfig()
+
+	if announceAddresses != nil {
+		addressesConfig.Announce = announceAddresses
+	}
+
 
 	conf := &Config{
 		API: API{
@@ -36,7 +55,7 @@ func InitWithIdentity(identity Identity) (*Config, error) {
 
 		// setup the node's default addresses.
 		// NOTE: two swarm listen addrs, one tcp, one utp.
-		Addresses: addressesConfig(),
+		Addresses: addressesConfig,
 
 		Datastore: datastore,
 		Bootstrap: BootstrapPeerStrings(bootstrapPeers),

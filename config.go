@@ -34,6 +34,9 @@ type Config struct {
 	Experimental Experiments
 	Plugins      Plugins
 	Pinning      Pinning
+
+	PPChannel PPChannel // PiedPiper side channel settings
+	TorPath   string
 }
 
 const (
