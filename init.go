@@ -12,39 +12,19 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func Init(out io.Writer, nBitsForKeypair int, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
+func Init(out io.Writer, nBitsForKeypair int, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
 	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
-	return InitWithIdentity(identity, bootStrapAddresses, announceAddresses, ppChannelUrl, commandPort, torPath, torConfigPath)
+	return InitWithIdentity(identity, ppChannelUrl, commandPort, torPath, torConfigPath)
 }
 
-func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAddresses []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
+func InitWithIdentity(identity Identity, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
-	var err error
-
-	if bootStrapAddresses == nil || len(bootStrapAddresses) == 0 {
-		bootstrapPeers, err = DefaultBootstrapPeers()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		bootstrapPeers, err = ParseBootstrapPeers(bootStrapAddresses)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	dataStore := DefaultDatastoreConfig()
-
-	addressesConfig := addressesConfig()
-
-	if announceAddresses != nil || len(announceAddresses) == 0 {
-		addressesConfig.Announce = announceAddresses
-	}
+	datastore := DefaultDatastoreConfig()
 
 	conf := &Config{
 		API: API{
@@ -53,9 +33,9 @@ func InitWithIdentity(identity Identity, bootStrapAddresses []string, announceAd
 
 		// setup the node's default addresses.
 		// NOTE: two swarm listen addrs, one tcp, one utp.
-		Addresses: addressesConfig,
+		Addresses: addressesConfig(),
 
-		Datastore: dataStore,
+		Datastore: datastore,
 		Bootstrap: BootstrapPeerStrings(bootstrapPeers),
 		Identity:  identity,
 		Discovery: Discovery{
