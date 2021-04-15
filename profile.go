@@ -97,7 +97,7 @@ is useful when using the daemon in test environments.`,
 Inverse profile of the test profile.`,
 
 		Transform: func(c *Config) error {
-			c.Addresses = addressesConfig()
+			c.Addresses = addressesConfig(nil)
 
 			bootstrapPeers, err := DefaultBootstrapPeers()
 			if err != nil {

@@ -18,13 +18,27 @@ func Init(out io.Writer, nBitsForKeypair int, ppChannelUrl string, commandPort i
 		return nil, err
 	}
 
-	return InitWithIdentity(identity, ppChannelUrl, commandPort, torPath, torConfigPath)
+	return InitWithIdentity(identity, make([]string,0), make([]string,0), ppChannelUrl, commandPort, torPath, torConfigPath)
 }
 
-func InitWithIdentity(identity Identity, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
+func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
+	var err error
+
 	datastore := DefaultDatastoreConfig()
+
+	if bootstrapAddrs == nil || len(bootstrapAddrs) == 0 {
+		bootstrapPeers, err = DefaultBootstrapPeers()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		bootstrapPeers, err = ParseBootstrapPeers(bootstrapAddrs)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	conf := &Config{
 		API: API{
@@ -33,7 +47,7 @@ func InitWithIdentity(identity Identity, ppChannelUrl string, commandPort int, t
 
 		// setup the node's default addresses.
 		// NOTE: two swarm listen addrs, one tcp, one utp.
-		Addresses: addressesConfig(),
+		Addresses: addressesConfig(announceAddrs),
 
 		Datastore: datastore,
 		Bootstrap: BootstrapPeerStrings(bootstrapPeers),
@@ -109,19 +123,34 @@ const DefaultConnMgrLowWater = 600
 // grace period
 const DefaultConnMgrGracePeriod = time.Second * 20
 
-func addressesConfig() Addresses {
-	return Addresses{
+func addressesConfig(addresesToUseExternally []string) Addresses {
+
+	if addresesToUseExternally == nil || len(addresesToUseExternally) == 0 {
+		return Addresses{
+			Swarm: []string{
+				"/ip4/0.0.0.0/tcp/4001",
+			},
+			Announce:   []string{},
+			NoAnnounce: []string{},
+			API:        Strings{"/ip4/127.0.0.1/tcp/5001"},
+			Gateway:    Strings{"/ip4/127.0.0.1/tcp/8080"},
+		}
+	}
+
+	var addresses = Addresses{
 		Swarm: []string{
-			"/ip4/0.0.0.0/tcp/4001",
-			"/ip6/::/tcp/4001",
-			"/ip4/0.0.0.0/udp/4001/quic",
-			"/ip6/::/udp/4001/quic",
+			"/ip4/127.0.0.1/tcp/4001",
 		},
 		Announce:   []string{},
 		NoAnnounce: []string{},
 		API:        Strings{"/ip4/127.0.0.1/tcp/5001"},
 		Gateway:    Strings{"/ip4/127.0.0.1/tcp/8080"},
 	}
+
+	addresses.Swarm = append(addresses.Swarm, addresesToUseExternally...)
+	addresses.Announce = append(addresses.Announce,addresesToUseExternally...)
+
+	return addresses
 }
 
 // DefaultDatastoreConfig is an internal function exported to aid in testing.
