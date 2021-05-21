@@ -18,7 +18,7 @@ func Init(out io.Writer, nBitsForKeypair int, ppChannelUrl string, commandPort i
 		return nil, err
 	}
 
-	return InitWithIdentity(identity, make([]string,0), make([]string,0), ppChannelUrl, commandPort, torPath, torConfigPath)
+	return InitWithIdentity(identity, make([]string, 0), make([]string, 0), ppChannelUrl, commandPort, torPath, torConfigPath)
 }
 
 func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
@@ -105,6 +105,7 @@ func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs 
 			ChannelUrl:        ppChannelUrl,
 		},
 		TorPath:       torPath,
+		TorDataDir:    torConfigPath,
 		TorConfigPath: torConfigPath,
 	}
 
@@ -148,7 +149,7 @@ func addressesConfig(addresesToUseExternally []string) Addresses {
 	}
 
 	addresses.Swarm = append(addresses.Swarm, addresesToUseExternally...)
-	addresses.Announce = append(addresses.Announce,addresesToUseExternally...)
+	addresses.Announce = append(addresses.Announce, addresesToUseExternally...)
 
 	return addresses
 }
