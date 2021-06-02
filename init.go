@@ -12,16 +12,16 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func Init(out io.Writer, nBitsForKeypair int, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
+func Init(out io.Writer, nBitsForKeypair int, ppChannelUrl string, commandPort int, torPath string, torDataDir string, torConfigPath string) (*Config, error) {
 	identity, err := CreateIdentity(out, []options.KeyGenerateOption{options.Key.Size(nBitsForKeypair)})
 	if err != nil {
 		return nil, err
 	}
 
-	return InitWithIdentity(identity, make([]string, 0), make([]string, 0), ppChannelUrl, commandPort, torPath, torConfigPath)
+	return InitWithIdentity(identity, make([]string, 0), make([]string, 0), ppChannelUrl, commandPort, torPath, torDataDir, torConfigPath)
 }
 
-func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs []string, ppChannelUrl string, commandPort int, torPath string, torConfigPath string) (*Config, error) {
+func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs []string, ppChannelUrl string, commandPort int, torPath string, torDataDir string, torConfigPath string) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
 	var err error
@@ -105,7 +105,7 @@ func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs 
 			ChannelUrl:        ppChannelUrl,
 		},
 		TorPath:       torPath,
-		TorDataDir:    torConfigPath,
+		TorDataDir:    torDataDir,
 		TorConfigPath: torConfigPath,
 	}
 
