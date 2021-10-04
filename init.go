@@ -129,7 +129,7 @@ func addressesConfig(addresesToUseExternally []string) Addresses {
 	if addresesToUseExternally == nil || len(addresesToUseExternally) == 0 {
 		return Addresses{
 			Swarm: []string{
-				"/ip4/0.0.0.0/tcp/4001",
+				"/ip4/127.0.0.1/tcp/4001",
 			},
 			Announce:   []string{},
 			NoAnnounce: []string{},
