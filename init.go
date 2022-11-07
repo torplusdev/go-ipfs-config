@@ -104,9 +104,11 @@ func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs 
 			CommandListenPort: commandPort,
 			ChannelUrl:        ppChannelUrl,
 		},
-		TorPath:       torPath,
-		TorDataDir:    torDataDir,
-		TorConfigPath: torConfigPath,
+		TorPath:                      torPath,
+		TorDataDir:                   torDataDir,
+		TorConfigPath:                torConfigPath,
+		FillChunkSize:                50,
+		FillChunkRetrievalTimeoutSec: 30,
 	}
 
 	return conf, nil

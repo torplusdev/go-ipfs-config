@@ -35,11 +35,14 @@ type Config struct {
 	Plugins      Plugins
 	Pinning      Pinning
 
-	PPChannel           PPChannel // torplus side channel settings
-	TorPath             string
-	TorDataDir          string
-	TorConfigPath       string
-	SupportNonAnonymous bool
+	PPChannel                    PPChannel // torplus side channel settings
+	TorPath                      string
+	TorDataDir                   string
+	TorConfigPath                string
+	TorProxyUrl                  string
+	SupportNonAnonymous          bool
+	FillChunkSize                int
+	FillChunkRetrievalTimeoutSec int
 }
 
 const (
