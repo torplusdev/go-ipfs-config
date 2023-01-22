@@ -21,6 +21,7 @@ func Init(out io.Writer, nBitsForKeypair int, routingType, ppChannelUrl string, 
 	return InitWithIdentity(identity, make([]string, 0), make([]string, 0), routingType, ppChannelUrl, commandPort, torPath, torDataDir, torConfigPath)
 }
 
+//, chunkSize int, chunkTimeout int
 func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs []string, routingType, ppChannelUrl string, commandPort int, torPath string, torDataDir string, torConfigPath string) (*Config, error) {
 
 	var bootstrapPeers []peer.AddrInfo
@@ -107,8 +108,8 @@ func InitWithIdentity(identity Identity, announceAddrs []string, bootstrapAddrs 
 		TorPath:                      torPath,
 		TorDataDir:                   torDataDir,
 		TorConfigPath:                torConfigPath,
-		FillChunkSize:                50,
-		FillChunkRetrievalTimeoutSec: 30,
+		FillChunkSize:                30,
+		FillChunkRetrievalTimeoutSec: 20,
 	}
 
 	return conf, nil
